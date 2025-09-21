@@ -170,28 +170,9 @@ int main(void)
 		sizeof(float) * 3,
 		0);
 
-	//---------Shader 생성---------------//
-	std::string vertexShader =
-		"#version 330 core\n"
-		"\n"
-		"layout(location = 0) in vec4 position;" //여기 있는 location = 0가, 118, 119 line의 0을 의미함
-		"\n"
-		"void main()\n"
-		"{\n"
-		"	gl_Position = position;\n" //119에서 보다시피, 2개의 값만 전달했지만, 알아서 vec4로 변환해줌
-		"}\n";
+	ShaderProgramSource source = ParseShader("res/shaders/Basic.shader");
 
-	std::string fragShader =
-		"#version 330 core\n"
-		"\n"
-		"layout(location = 0) out vec4 color;" //출력 color
-		"\n"
-		"void main()\n"
-		"{\n"
-		"	color = vec4(1.0, 1.0 ,0.0, 1.0);\n" //빨간색 반환
-		"}\n";
-
-	unsigned int shader = CreateShader(vertexShader, fragShader);
+	unsigned int shader = CreateShader(source.VertexSource, source.FragSource);
 	glUseProgram(shader); //BindBuffer와 마찬가지로, 현재 셰이더 프로그램을 "작업 상태"로 놓음
 	//draw call은 작업 상태인 셰이더 프로그램을 사용하여 작업 상태인 버퍼 데이터를 그림
 
@@ -204,13 +185,6 @@ int main(void)
 
 		//glUseProgram(0); // deactivate
 		glDrawArrays(GL_TRIANGLES, 0, 3); // draw call
-
-		//// 삼각형 그리는 Legacy 코드 추가
-		//glBegin(GL_TRIANGLES);
-		//glVertex2f(-0.5f, -0.5f);
-		//glVertex2f( 0.0f,  0.5f);
-		//glVertex2f( 0.5f, -0.5f);
-		//glEnd();
 
 		/* Swap front and back buffers */
 		glfwSwapBuffers(window);
