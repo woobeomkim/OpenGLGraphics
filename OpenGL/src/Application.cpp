@@ -35,20 +35,29 @@ int main(void)
 
 	std::cout << glGetString(GL_VERSION) << std::endl; //내 플랫폼의 GL_Version 출력해보기
 
-	//glEnable(GL_CULL_FACE);
-	float position[6] = {
-		0.0f, 0.5f,
-		0.5f, -0.5f,
-		-0.5f, -0.5f
+	glEnable(GL_CULL_FACE);
+	float position[9] = {
+		0.0f, 0.5f,0.0f,
+		-0.5f,-0.5f,0.0f,
+		0.5f, -0.5f,0.0f
 	};
 
 	unsigned int bufferID;
 	glGenBuffers(1, &bufferID);
 	glBindBuffer(GL_ARRAY_BUFFER, bufferID); // <-- BIND == ACTIVATE
 	glBufferData(GL_ARRAY_BUFFER, // 실제 CPU -> GPU
-		sizeof(float) * 6,
+		sizeof(float) * 9,
 		position,
 		GL_STATIC_DRAW);
+
+	// 데이터를 해석하는 방법
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0,
+		3, // 하나의 vertex에 몇개의 데이터를 넘기는지
+		GL_FLOAT,
+		GL_FALSE,
+		sizeof(float) * 3,
+		0);
 
 
 	/* Loop until the user closes the window */
