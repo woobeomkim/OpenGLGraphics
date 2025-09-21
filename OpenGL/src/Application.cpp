@@ -7,6 +7,9 @@
 #include <GL/glew.h> //glfw보다 먼저 include해야 함
 #include <GLFW/glfw3.h>
 #include <iostream>
+#include <fstream>
+#include <string>
+#include <sstream>
 
 // 이번에는 Vertex Array와 Shader를 이용하여 삼각형을 그리는 Modern OpenGL 방식으로 구현할 것임
 // Vertex Array는 GPU의 VRAM에 Buffer에 저장되는 데이터를 넘기는 방식을 이야기함
@@ -29,15 +32,52 @@
 // Activate(t2); //삼각형 2를 처리중인 상태로 설정
 // Draw(); //현재 처리중인 데이터(=삼각형 2)를 화면에 그림
 
-//--------Shader 컴파일 함수----------//
+struct ShaderProgramSource
+{
+	std::string VertexSource;
+	std::string FragSource;
+};
+
+//셰이더 파일 파싱 함수
+static ShaderProgramSource ParseShader(const std::string& filepath)
+{
+	std::ifstream stream(filepath);
+
+	enum class ShaderType
+	{
+		NONE = -1, VERTEX = 0, FRAGMENT = 1
+	};
+
+	std::string line;
+	std::stringstream ss[2];
+	ShaderType type = ShaderType::NONE;
+	while (getline(stream, line))
+	{
+		if (line.find("#shader") != std::string::npos)
+		{
+			if (line.find("vertex") != std::string::npos) //vertex 셰이더 섹션
+			{
+				type = ShaderType::VERTEX;
+			}
+			else if (line.find("fragment") != std::string::npos) //fragment 셰이더 섹션
+			{
+				type = ShaderType::FRAGMENT;
+			}
+		}
+		else
+		{
+			ss[(int)type] << line << '\n'; //코드를 stringstream에 삽입
+		}
+	}
+
+	return { ss[0].str(), ss[1].str() };
+}
+
 static unsigned int CompileShader(unsigned int type, const std::string& source)
 {
 	unsigned int id = glCreateShader(type); //셰이더 객체 생성(마찬가지)
 	const char* src = source.c_str();
-	glShaderSource(id, // 셰이더의 소스 코드 명시, 소스 코드를 명시할 셰이더 객체 id
-		1, // 몇 개의 소스 코드를 명시할 것인지
-		&src, // 실제 소스 코드가 들어있는 문자열의 주소값
-		nullptr); // 해당 문자열 전체를 사용할 경우 nullptr입력, 아니라면 길이 명시
+	glShaderSource(id, 1, &src, nullptr); // 셰이더의 소스 코드 명시
 	glCompileShader(id); // id에 해당하는 셰이더 컴파일
 
 	// Error Handling(없으면 셰이더 프로그래밍할때 괴롭다...)
@@ -77,6 +117,7 @@ static unsigned int CreateShader(const std::string& vertexShader, const std::str
 
 	return program;
 }
+
 
 int main(void)
 {
@@ -161,6 +202,7 @@ int main(void)
 		/* Render here */
 		glClear(GL_COLOR_BUFFER_BIT);
 
+		//glUseProgram(0); // deactivate
 		glDrawArrays(GL_TRIANGLES, 0, 3); // draw call
 
 		//// 삼각형 그리는 Legacy 코드 추가
