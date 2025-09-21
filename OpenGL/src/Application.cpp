@@ -147,19 +147,34 @@ int main(void)
 	std::cout << glGetString(GL_VERSION) << std::endl; //내 플랫폼의 GL_Version 출력해보기
 
 	glEnable(GL_CULL_FACE);
-	float position[9] = {
-		0.0f, 0.5f,0.0f,
-		-0.5f,-0.5f,0.0f,
-		0.5f, -0.5f,0.0f
+	float position[] = {
+		-0.5f,-0.5f, 0.0f, //0
+		 0.5f,-0.5f, 0.0f, //1
+		 0.5f, 0.5f, 0.0f, //2
+		-0.5f, 0.5f, 0.0f  //3
+	};
+
+	unsigned int indices[] = {
+		0, 1, 2, // t1
+		2, 3, 0, // t2
 	};
 
 	unsigned int bufferID;
 	glGenBuffers(1, &bufferID);
 	glBindBuffer(GL_ARRAY_BUFFER, bufferID); // <-- BIND == ACTIVATE
 	glBufferData(GL_ARRAY_BUFFER, // 실제 CPU -> GPU
-		sizeof(float) * 9,
+		sizeof(float) * 12,
 		position,
 		GL_STATIC_DRAW);
+
+	unsigned int ibo; // Index Buffer Object 줄임말
+	glGenBuffers(1, &ibo);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo); // bind
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+		6 * sizeof(unsigned int),
+		indices,
+		GL_STATIC_DRAW
+	);
 
 	// 데이터를 해석하는 방법
 	glEnableVertexAttribArray(0);
@@ -184,7 +199,11 @@ int main(void)
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		//glUseProgram(0); // deactivate
-		glDrawArrays(GL_TRIANGLES, 0, 3); // draw call
+		//glDrawArrays(GL_TRIANGLES, 0, 3); // draw call
+		glDrawElements(GL_TRIANGLES,
+			6,
+			GL_UNSIGNED_INT,
+			nullptr);
 
 		/* Swap front and back buffers */
 		glfwSwapBuffers(window);
