@@ -159,10 +159,10 @@ int main(void)
 	{
 		glEnable(GL_CULL_FACE);
 		float position[] = {
-			-0.5f,-0.5f, 0.0f, //0
-			 0.5f,-0.5f, 0.0f, //1
-			 0.5f, 0.5f, 0.0f, //2
-			-0.5f, 0.5f, 0.0f  //3
+			-0.5f,-0.5f, 0.0f, 1.0f, 0.0f,0.0f, //0
+			 0.5f,-0.5f, 0.0f, 0.0f, 1.0f,0.0f, //1
+			 0.5f, 0.5f, 0.0f, 0.0f, 0.0f,1.0f, //2
+			-0.5f, 0.5f, 0.0f, 1.0f, 0.0f,1.0f,  //3
 		};
 
 		unsigned int indices[] = {
@@ -175,16 +175,14 @@ int main(void)
 		glGenVertexArrays(1, &vao);
 		glBindVertexArray(vao);
 
-		VertexBuffer vb{ position,4 * 3 * sizeof(float) };
+		VertexBuffer vb{ position,4 * 6 * sizeof(float) };
 
 		// 데이터를 해석하는 방법
 		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0,
-			3, // 하나의 vertex에 몇개의 데이터를 넘기는지
-			GL_FLOAT,
-			GL_FALSE,
-			sizeof(float) * 3,
-			0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 6, 0);
+		
+		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 6, (const void*)(3 * sizeof(float)));
 
 		IndexBuffer ib{ indices,6 };
 
@@ -195,9 +193,9 @@ int main(void)
 		GLCall(glUseProgram(shader)); //BindBuffer와 마찬가지로, 현재 셰이더 프로그램을 "작업 상태"로 놓음
 		//draw call은 작업 상태인 셰이더 프로그램을 사용하여 작업 상태인 버퍼 데이터를 그림
 
-		GLCall(int location = glGetUniformLocation(shader, "u_Color"));
-		ASSERT(location != -1);
-		GLCall(glUniform4f(location, 0.2f, 0.3f, 0.8f, 1.0f));
+		//GLCall(int location = glGetUniformLocation(shader, "u_Color"));
+		//ASSERT(location != -1);
+		//GLCall(glUniform4f(location, 0.2f, 0.3f, 0.8f, 1.0f));
 
 		// 0번넣으면 Unbind됨
 		glBindVertexArray(0); // vao
