@@ -32,6 +32,29 @@
 // Activate(t2); //삼각형 2를 처리중인 상태로 설정
 // Draw(); //현재 처리중인 데이터(=삼각형 2)를 화면에 그림
 
+//__debugbreak()는 MSVC에만 사용 가능
+#define ASSERT(x) if ((!(x))) __debugbreak(); 
+#define GLCall(x) GLClearError();\
+				  x;\
+				  ASSERT(GLLogCall(#x, __FILE__, __LINE__))
+
+//glGetError는 에러를 하나씩만 반환하기 때문에, 한 번 확인에 모든 오류를 뽑아내는 것이 필요함
+static void GLClearError()
+{
+	while (glGetError() != GL_NO_ERROR); // GL_NO_ERROR == 0
+}
+
+static bool GLLogCall(const char* function, const char* file, int line)
+{
+	while (GLenum error = glGetError())
+	{
+		std::cout << "[OpenGL Error] (" << error << ") : " << function <<
+			" " << file << " in line " << line << std::endl;
+		return false;
+	}
+	return true;
+}
+
 struct ShaderProgramSource
 {
 	std::string VertexSource;
@@ -135,6 +158,11 @@ int main(void)
 		return -1;
 	}
 
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3); //Opengl 3.3 버전 사용
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE); //Compatability 버전일때는 VAO를 안만들어도 동작
+	//glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
 	/* Make the window's context current */
 	glfwMakeContextCurrent(window);
 
@@ -159,6 +187,11 @@ int main(void)
 		2, 3, 0, // t2
 	};
 
+	/* VAO는 버퍼 + 데이터해석방법을 동시에한다 */
+	unsigned int vao;  // vertext array object
+	glGenVertexArrays(1, &vao);
+	glBindVertexArray(vao);
+
 	unsigned int bufferID;
 	glGenBuffers(1, &bufferID);
 	glBindBuffer(GL_ARRAY_BUFFER, bufferID); // <-- BIND == ACTIVATE
@@ -167,14 +200,6 @@ int main(void)
 		position,
 		GL_STATIC_DRAW);
 
-	unsigned int ibo; // Index Buffer Object 줄임말
-	glGenBuffers(1, &ibo);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo); // bind
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-		6 * sizeof(unsigned int),
-		indices,
-		GL_STATIC_DRAW
-	);
 
 	// 데이터를 해석하는 방법
 	glEnableVertexAttribArray(0);
@@ -185,25 +210,53 @@ int main(void)
 		sizeof(float) * 3,
 		0);
 
+	unsigned int ibo; // Index Buffer Object 줄임말
+	glGenBuffers(1, &ibo);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo); // bind
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+		6 * sizeof(unsigned int),
+		indices,
+		GL_STATIC_DRAW
+	);
 	ShaderProgramSource source = ParseShader("res/shaders/Basic.shader");
 
 	unsigned int shader = CreateShader(source.VertexSource, source.FragSource);
-	glUseProgram(shader); //BindBuffer와 마찬가지로, 현재 셰이더 프로그램을 "작업 상태"로 놓음
+	GLCall(glUseProgram(shader)); //BindBuffer와 마찬가지로, 현재 셰이더 프로그램을 "작업 상태"로 놓음
 	//draw call은 작업 상태인 셰이더 프로그램을 사용하여 작업 상태인 버퍼 데이터를 그림
 
+	GLCall(int location = glGetUniformLocation(shader, "u_Color"));
+	ASSERT(location != -1);
+	GLCall(glUniform4f(location, 0.2f, 0.3f, 0.8f, 1.0f));
+
+	// 0번넣으면 Unbind됨
+	glBindVertexArray(0); // vao
+	glBindBuffer(GL_ARRAY_BUFFER, 0); // buffer
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); // ibo
+	glUseProgram(0); // shader
 
 	/* Loop until the user closes the window */
 	while (!glfwWindowShouldClose(window))
 	{
 		/* Render here */
-		glClear(GL_COLOR_BUFFER_BIT);
+		GLCall(glClear(GL_COLOR_BUFFER_BIT));
 
 		//glUseProgram(0); // deactivate
 		//glDrawArrays(GL_TRIANGLES, 0, 3); // draw call
-		glDrawElements(GL_TRIANGLES,
+
+		// VAO 방법 바인드
+		glBindVertexArray(vao);
+		
+		// BUFFER IBO 방법 바인드
+		//glBindBuffer(GL_ARRAY_BUFFER, bufferID); // buffer
+		//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo); // ibo
+		
+		// shader 사용
+		glUseProgram(shader); // shade
+
+		GLCall(glDrawElements(GL_TRIANGLES,
 			6,
 			GL_UNSIGNED_INT,
-			nullptr);
+			nullptr));
 
 		/* Swap front and back buffers */
 		glfwSwapBuffers(window);
