@@ -14,6 +14,7 @@
 #include "Renderer.h"
 #include "VertexBuffer.h"
 #include "IndexBuffer.h"
+#include "VertexArray.h"
 
 // 이번에는 Vertex Array와 Shader를 이용하여 삼각형을 그리는 Modern OpenGL 방식으로 구현할 것임
 // Vertex Array는 GPU의 VRAM에 Buffer에 저장되는 데이터를 넘기는 방식을 이야기함
@@ -170,19 +171,13 @@ int main(void)
 			2, 3, 0, // t2
 		};
 
-		/* VAO는 버퍼 + 데이터해석방법을 동시에한다 */
-		unsigned int vao;  // vertext array object
-		glGenVertexArrays(1, &vao);
-		glBindVertexArray(vao);
+		VertexArray va;
+		VertexBuffer vb{ position, 4 * 7 * sizeof(float) };
 
-		VertexBuffer vb{ position,4 * 6 * sizeof(float) };
-
-		// 데이터를 해석하는 방법
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 6, 0);
-		
-		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 6, (const void*)(3 * sizeof(float)));
+		VertexBufferLayout layout;
+		layout.Push<float>(3);
+		layout.Push<float>(3);
+		va.AddBuffer(vb, layout);
 
 		IndexBuffer ib{ indices,6 };
 
@@ -212,8 +207,7 @@ int main(void)
 			//glUseProgram(0); // deactivate
 			//glDrawArrays(GL_TRIANGLES, 0, 3); // draw call
 
-			// VAO 방법 바인드
-			glBindVertexArray(vao);
+			va.Bind();
 
 			// shader 사용
 			glUseProgram(shader); // shade
