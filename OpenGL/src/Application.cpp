@@ -16,6 +16,7 @@
 #include "IndexBuffer.h"
 #include "VertexArray.h"
 #include "Shader.h"
+#include "VertexBufferLayout.h"
 
 // 이번에는 Vertex Array와 Shader를 이용하여 삼각형을 그리는 Modern OpenGL 방식으로 구현할 것임
 // Vertex Array는 GPU의 VRAM에 Buffer에 저장되는 데이터를 넘기는 방식을 이야기함
@@ -70,66 +71,52 @@ int main(void)
 
 	std::cout << glGetString(GL_VERSION) << std::endl; //내 플랫폼의 GL_Version 출력해보기
 	
-	// 소멸자 확인용 스코프
+
+	glEnable(GL_CULL_FACE);
+	float position[] = {
+		-0.5f,-0.5f, 0.0f, 1.0f, 0.0f,0.0f, //0
+		 0.5f,-0.5f, 0.0f, 0.0f, 1.0f,0.0f, //1
+		 0.5f, 0.5f, 0.0f, 0.0f, 0.0f,1.0f, //2
+		-0.5f, 0.5f, 0.0f, 1.0f, 0.0f,1.0f,  //3
+	};
+
+	unsigned int indices[] = {
+		0, 1, 2, // t1
+		2, 3, 0, // t2
+	};
+
+	VertexArray va;
+	VertexBuffer vb{ position, 4 * 7 * sizeof(float) };
+
+	VertexBufferLayout layout;
+	layout.Push<float>(3);
+	layout.Push<float>(3);
+	va.AddBuffer(vb, layout);
+
+	IndexBuffer ib{ indices,6 };
+
+	// Shader
+	Shader shader{ "res/shaders/Basic.shader" };
+	shader.Bind();
+
+	Renderer renderer;
+
+	va.Unbind();
+	vb.Unbind();
+	ib.Unbind();
+	shader.Unbind();
+	/* Loop until the user closes the window */
+	while (!glfwWindowShouldClose(window))
 	{
-		glEnable(GL_CULL_FACE);
-		float position[] = {
-			-0.5f,-0.5f, 0.0f, 1.0f, 0.0f,0.0f, //0
-			 0.5f,-0.5f, 0.0f, 0.0f, 1.0f,0.0f, //1
-			 0.5f, 0.5f, 0.0f, 0.0f, 0.0f,1.0f, //2
-			-0.5f, 0.5f, 0.0f, 1.0f, 0.0f,1.0f,  //3
-		};
+		/* Render here */
+		renderer.Clear();
 
-		unsigned int indices[] = {
-			0, 1, 2, // t1
-			2, 3, 0, // t2
-		};
+		renderer.Draw(va, ib, shader);
+		/* Swap front and back buffers */
+		glfwSwapBuffers(window);
 
-		VertexArray va;
-		VertexBuffer vb{ position, 4 * 7 * sizeof(float) };
-
-		VertexBufferLayout layout;
-		layout.Push<float>(3);
-		layout.Push<float>(3);
-		va.AddBuffer(vb, layout);
-
-		IndexBuffer ib{ indices,6 };
-
-		// Shader
-		Shader shader{ "res/shaders/Basic.shader" };
-		shader.Bind();
-
-
-		va.Unbind();
-		vb.Unbind();
-		ib.Unbind();
-		shader.Unbind();
-		/* Loop until the user closes the window */
-		while (!glfwWindowShouldClose(window))
-		{
-			/* Render here */
-			GLCall(glClear(GL_COLOR_BUFFER_BIT));
-
-			//glUseProgram(0); // deactivate
-			//glDrawArrays(GL_TRIANGLES, 0, 3); // draw call
-
-			va.Bind();
-
-			// shader 사용
-			shader.Bind();
-
-			GLCall(glDrawElements(GL_TRIANGLES,
-				6,
-				GL_UNSIGNED_INT,
-				nullptr));
-
-			/* Swap front and back buffers */
-			glfwSwapBuffers(window);
-
-			/* Poll for and process events */
-			glfwPollEvents();
-		}
-
+		/* Poll for and process events */
+		glfwPollEvents();
 	}
 	
 	glfwTerminate();
