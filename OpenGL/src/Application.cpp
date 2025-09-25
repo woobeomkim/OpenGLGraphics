@@ -18,29 +18,40 @@
 #include "Shader.h"
 #include "VertexBufferLayout.h"
 
-// 이번에는 Vertex Array와 Shader를 이용하여 삼각형을 그리는 Modern OpenGL 방식으로 구현할 것임
-// Vertex Array는 GPU의 VRAM에 Buffer에 저장되는 데이터를 넘기는 방식을 이야기함
-// 데이터를 넘기고 나서 삼각형을 실제로 그리는 명령을 호출하는 것을 Draw call이라고 함
-// 삼각형이 어떻게 그려질지 사용자가 구현한 프로그램이 Shader임
+#include "glm/glm.hpp"
+#include "glm/gtc/matrix_transform.hpp"
+#define GLM_ENABLE_EXPERIMENTAL
+#include "glm/gtx/transform.hpp"
 
-// OpenGL은 State Machine과 비슷함. 일반적인 객체 지향 프로그램의 설계와는 다르게,
-// 현재 처리할 데이터를 선택한 후, 현재 실행해야 할 작업을 함수 호출을 통해 처리하는 방식임
-// 간단하게 두 삼각형을 화면에 그리는 의사코드로 설명하면,
+glm::mat4 GetTranslationMatrix(float tx, float ty, float tz)
+{
+	// glm 은 row major matrix
+	glm::mat4 T{ 1.0f,0.0f,0.0f,tx,
+				 0.0f,1.0f,0.0f,ty,
+				 0.0f,0.0f,1.0f,tz,
+				 0.0f,0.0f,0.0f,1.0f };
 
-// ---객체지향 방식
-// Triangle t1, t2; //삼각형 두 개를 정의
-// Draw(t1); //t1 객체를 전달함으로써 삼각형 1을 그림
-// Draw(t2); //t2 객체를 전달함으로써 삼각형 2를 그림
+	return glm::transpose(T);
+}
 
-// ---State Machine 방식
-// Triangle t1, t2; //삼각형 두 개를 정의
-// Activate(t1); //삼각형 1을 처리중인 상태로 설정
-// Draw(); //현재 처리중인 데이터(=삼각형 1)를 화면에 그림
-// Activate(t2); //삼각형 2를 처리중인 상태로 설정
-// Draw(); //현재 처리중인 데이터(=삼각형 2)를 화면에 그림
+glm::mat4 GetProjectionMatrix(float fovy, float aspect, float n, float f)
+{
+	float halfCot = 1 / (glm::tan(fovy / 2));
+	glm::mat4 P{ halfCot / aspect,0.0f,0.0f,0.0f,
+				 0.0f,halfCot,0.0f,0.0f,
+				 0.0f,0.0f,-(f + n) / (f - n), -2 * n * f / (f - n),
+				 0.0f,0.0f,-1.0f,0.0f };
+
+	return glm::transpose(P);
+}
 
 int main(void)
 {
+	glm::mat4 T = GetTranslationMatrix(1.0f, 0.0f, 0.0f);
+	glm::vec4 pos = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+
+	glm::vec4 translatedPosition = T * pos;
+
 	GLFWwindow* window;
 
 	/* Initialize the library */
@@ -74,10 +85,10 @@ int main(void)
 
 	glEnable(GL_CULL_FACE);
 	float position[] = {
-		-0.5f,-0.5f, 0.0f, 1.0f, 0.0f,0.0f, //0
-		 0.5f,-0.5f, 0.0f, 0.0f, 1.0f,0.0f, //1
-		 0.5f, 0.5f, 0.0f, 0.0f, 0.0f,1.0f, //2
-		-0.5f, 0.5f, 0.0f, 1.0f, 0.0f,1.0f,  //3
+		-0.5f,-0.5f, -5.0f, //0
+		 0.5f,-0.5f, -5.0f, //1
+		 0.5f, 0.5f, -5.0f, //2
+		-0.5f, 0.5f, -5.0f,  //3
 	};
 
 	unsigned int indices[] = {
@@ -86,14 +97,19 @@ int main(void)
 	};
 
 	VertexArray va;
-	VertexBuffer vb{ position, 4 * 7 * sizeof(float) };
+	VertexBuffer vb{ position, 3 * 4 * sizeof(float) };
 
 	VertexBufferLayout layout;
-	layout.Push<float>(3);
 	layout.Push<float>(3);
 	va.AddBuffer(vb, layout);
 
 	IndexBuffer ib{ indices,6 };
+
+	// modle view projection matrix 정의
+	glm::mat4 model = GetTranslationMatrix(0.0f, 0.0f, 0.0f);
+	glm::mat4 proj = GetProjectionMatrix(3.14F / 3, 640 / 480 , 1.0f, 100.0f);
+
+	//glm::mat4 proj = glm::ortho(-2.0f, 2.0f, -1.5f, 1.5f, -1.0f, 1.0f);
 
 	// Shader
 	Shader shader{ "res/shaders/Basic.shader" };
@@ -111,6 +127,10 @@ int main(void)
 		/* Render here */
 		renderer.Clear();
 
+		shader.Bind();
+		shader.SetUniformMat4f("u_Model", model);
+		shader.SetUniformMat4f("u_Proj", proj);
+		
 		renderer.Draw(va, ib, shader);
 		/* Swap front and back buffers */
 		glfwSwapBuffers(window);
