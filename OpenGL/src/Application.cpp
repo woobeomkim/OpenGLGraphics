@@ -17,6 +17,7 @@
 #include "VertexArray.h"
 #include "Shader.h"
 #include "VertexBufferLayout.h"
+#include "Window.h"
 
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
@@ -52,38 +53,9 @@ int main(void)
 
 	glm::vec4 translatedPosition = T * pos;
 
-	GLFWwindow* window;
+	Window mainWindow{ 800,600 };
+	mainWindow.Initialize();
 
-	/* Initialize the library */
-	if (!glfwInit())
-		return -1;
-
-	/* Create a windowed mode window and its OpenGL context */
-	window = glfwCreateWindow(640, 480, "Hello World", NULL, NULL);
-	if (!window)
-	{
-		glfwTerminate();
-		return -1;
-	}
-
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3); //Opengl 3.3 버전 사용
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE); //Compatability 버전일때는 VAO를 안만들어도 동작
-	//glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-	/* Make the window's context current */
-	glfwMakeContextCurrent(window);
-
-	// glfwMakeContextCurrent가 호출된 후에 glewInit이 수행되어야 함
-	if (glewInit() != GLEW_OK)
-	{
-		std::cout << "Error\n";
-	}
-
-	std::cout << glGetString(GL_VERSION) << std::endl; //내 플랫폼의 GL_Version 출력해보기
-	
-
-	glEnable(GL_CULL_FACE);
 	float position[] = {
 		-0.5f,-0.5f, -5.0f, //0
 		 0.5f,-0.5f, -5.0f, //1
@@ -122,7 +94,7 @@ int main(void)
 	ib.Unbind();
 	shader.Unbind();
 	/* Loop until the user closes the window */
-	while (!glfwWindowShouldClose(window))
+	while (!mainWindow.GetShouldClose())
 	{
 		/* Render here */
 		renderer.Clear();
@@ -133,12 +105,10 @@ int main(void)
 		
 		renderer.Draw(va, ib, shader);
 		/* Swap front and back buffers */
-		glfwSwapBuffers(window);
+		mainWindow.SwapBuffers();
 
 		/* Poll for and process events */
 		glfwPollEvents();
 	}
-	
-	glfwTerminate();
 	return 0;
 }
